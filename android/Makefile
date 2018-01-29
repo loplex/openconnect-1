@@ -277,9 +277,9 @@ stoken: $(STOKEN_DEPS)
 #
 # Build liboath
 #
-OATH_VER := 2.4.1
+OATH_VER := 2.6.2
 OATH_TAR := oath-toolkit-$(OATH_VER).tar.gz
-OATH_SHA := b0ca4c5f89c12c550f7227123c2f21f45b2bf969
+OATH_SHA := b03446fa4b549af5ebe4d35d7aba51163442d255660558cd861ebce536824aa0
 OATH_SRC := sources/oath-toolkit-$(OATH_VER)
 OATH_BUILD := $(TRIPLET)/oath
 
@@ -289,13 +289,15 @@ $(OATH_TAR):
 $(OATH_SRC)/configure: $(OATH_TAR)
 	mkdir -p sources
 	tar xfz $< -C sources
-	cd $(OATH_SRC) && patch -p1 < ../../0001-fflush-freadahead-fseeko-Fix-for-Android.patch
+	cd $(OATH_SRC) && patch -p1 < ../../0001-HACK-Fix-Android-build.patch
 	touch $@
 
 $(OATH_BUILD)/Makefile: $(TOOLCHAIN_BUILT) $(OATH_SRC)/configure
 	mkdir -p $(OATH_BUILD)
 	cd $(OATH_BUILD) && ../../$(OATH_SRC)/configure $(CONFIGURE_ARGS) \
-		--disable-pskc --disable-pam
+		--disable-pskc --disable-pam \
+		ac_cv_have_decl_fseeko=yes gl_cv_func_fflush_stdin=yes \
+		ac_cv_func___freading=yes gl_cv_func_fpurge_works=yes
 
 $(OATH_BUILD)/liboath/liboath.la: $(OATH_BUILD)/Makefile
 	$(MAKE) -C $(OATH_BUILD)
