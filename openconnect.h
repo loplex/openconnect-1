@@ -208,6 +208,8 @@ struct oc_vpn_proto {
 
 #define OC_FORM_OPT_IGNORE		0x0001
 #define OC_FORM_OPT_NUMERIC		0x0002
+#define OC_FORM_OPT_FILL_USERNAME	0x0004
+#define OC_FORM_OPT_FILL_PASSWORD	0x0008
 
 /* char * fields are static (owned by XML parser) and don't need to be
    freed by the form handling code — except for value, which for TEXT
@@ -429,7 +431,7 @@ int openconnect_init_ssl(void);
 const char *openconnect_get_cstp_cipher(struct openconnect_info *);
 const char *openconnect_get_dtls_cipher(struct openconnect_info *);
 
-/* These return a descriptive string of the compression algorithm 
+/* These return a descriptive string of the compression algorithm
  * in use (LZS, LZ4, ...). If no compression then NULL is returned. */
 const char *openconnect_get_cstp_compression(struct openconnect_info *);
 const char *openconnect_get_dtls_compression(struct openconnect_info *);

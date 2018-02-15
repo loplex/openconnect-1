@@ -146,6 +146,10 @@ struct pkt {
 			unsigned char pad[16];
 			unsigned char hdr[8];
 		} cstp;
+		struct {
+			unsigned char pad[8];
+			unsigned char hdr[16];
+		} gpst;
 	};
 	unsigned char data[];
 };
@@ -259,6 +263,7 @@ struct vpn_proto {
 	const char *name;
 	const char *pretty_name;
 	const char *description;
+	const char *override_useragent;
 	unsigned int flags;
 	int (*vpn_close_session)(struct openconnect_info *vpninfo, const char *reason);
 
@@ -374,6 +379,7 @@ struct openconnect_info {
 	struct esp esp_out;
 	int enc_key_len;
 	int hmac_key_len;
+	in_addr_t esp_magic; /* GlobalProtect magic ping address (network-endian) */
 
 	int tncc_fd; /* For Juniper TNCC */
 	const char *csd_xmltag;
@@ -858,6 +864,18 @@ int oncp_connect(struct openconnect_info *vpninfo);
 int oncp_mainloop(struct openconnect_info *vpninfo, int *timeout);
 int oncp_bye(struct openconnect_info *vpninfo, const char *reason);
 
+/* auth-globalprotect.c */
+int gpst_obtain_cookie(struct openconnect_info *vpninfo);
+void gpst_common_headers(struct openconnect_info *vpninfo, struct oc_text_buf *buf);
+int gpst_bye(struct openconnect_info *vpninfo, const char *reason);
+
+/* gpst.c */
+int gpst_xml_or_error(struct openconnect_info *vpninfo, int result, char *response,
+					  int (*xml_cb)(struct openconnect_info *, xmlNode *xml_node),
+					  char **prompt, char **inputStr);
+int gpst_setup(struct openconnect_info *vpninfo);
+int gpst_mainloop(struct openconnect_info *vpninfo, int *timeout);
+
 /* lzs.c */
 int lzs_decompress(unsigned char *dst, int dstlen, const unsigned char *src, int srclen);
 int lzs_compress(unsigned char *dst, int dstlen, const unsigned char *src, int srclen);
@@ -902,10 +920,13 @@ int verify_packet_seqno(struct openconnect_info *vpninfo,
 int esp_setup(struct openconnect_info *vpninfo, int dtls_attempt_period);
 int esp_mainloop(struct openconnect_info *vpninfo, int *timeout);
 void esp_close(struct openconnect_info *vpninfo);
+void esp_close_secret(struct openconnect_info *vpninfo);
 void esp_shutdown(struct openconnect_info *vpninfo);
 int print_esp_keys(struct openconnect_info *vpninfo, const char *name, struct esp *esp);
 int esp_send_probes(struct openconnect_info *vpninfo);
+int esp_send_probes_gp(struct openconnect_info *vpninfo);
 int esp_catch_probe(struct openconnect_info *vpninfo, struct pkt *pkt);
+int esp_catch_probe_gp(struct openconnect_info *vpninfo, struct pkt *pkt);
 
 /* {gnutls,openssl}-esp.c */
 int setup_esp_keys(struct openconnect_info *vpninfo, int new_keys);
@@ -944,6 +965,7 @@ int tun_mainloop(struct openconnect_info *vpninfo, int *timeout);
 int queue_new_packet(struct pkt_q *q, void *buf, int len);
 int keepalive_action(struct keepalive_info *ka, int *timeout);
 int ka_stalled_action(struct keepalive_info *ka, int *timeout);
+int ka_check_deadline(int *timeout, time_t now, time_t due);
 
 /* xml.c */
 ssize_t read_file_into_string(struct openconnect_info *vpninfo, const char *fname,
@@ -1017,6 +1039,7 @@ int get_utf8char(const char **utf8);
 void buf_append_from_utf16le(struct oc_text_buf *buf, const void *utf16);
 void buf_truncate(struct oc_text_buf *buf);
 void buf_append_urlencoded(struct oc_text_buf *buf, const char *str);
+void buf_append_xmlescaped(struct oc_text_buf *buf, const char *str);
 int buf_error(struct oc_text_buf *buf);
 int buf_free(struct oc_text_buf *buf);
 char *openconnect_create_useragent(const char *base);
