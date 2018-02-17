@@ -1045,6 +1045,26 @@ JNIEXPORT void JNICALL Java_org_infradead_libopenconnect_LibOpenConnect_setSyste
 	openconnect_set_system_trust(ctx->vpninfo, arg);
 }
 
+
+#define SET_STRING_START(ret) \
+	struct libctx *ctx = getctx(jenv, jobj); \
+	const char *arg = NULL;			 \
+	if (get_cstring(ctx->jenv, jarg, &arg)) \
+		return ret;
+
+#define SET_STRING_END() \
+	release_cstring(ctx->jenv, jarg, arg)
+
+JNIEXPORT jint JNICALL Java_org_infradead_libopenconnect_LibOpenConnect_setProtocol(
+	JNIEnv *jenv, jobject jobj, jstring jarg)
+{
+    int ret;
+	SET_STRING_START()
+	ret = openconnect_set_protocol(ctx->vpninfo, arg);
+	SET_STRING_END();
+	return ret;
+}
+
 JNIEXPORT jint JNICALL Java_org_infradead_libopenconnect_LibOpenConnect_makeCSTPConnection(
 	JNIEnv *jenv, jobject jobj)
 {
@@ -1196,15 +1216,6 @@ JNIEXPORT jstring JNICALL Java_org_infradead_libopenconnect_LibOpenConnect_getCS
 	buf = openconnect_get_cstp_cipher(ctx->vpninfo);
 	RETURN_STRING_END
 }
-
-#define SET_STRING_START(ret) \
-	struct libctx *ctx = getctx(jenv, jobj); \
-	const char *arg = NULL;			 \
-	if (get_cstring(ctx->jenv, jarg, &arg)) \
-		return ret;
-
-#define SET_STRING_END() \
-	release_cstring(ctx->jenv, jarg, arg)
 
 JNIEXPORT jint JNICALL Java_org_infradead_libopenconnect_LibOpenConnect_checkPeerCertHash(
 	JNIEnv *jenv, jobject jobj, jstring jarg)
